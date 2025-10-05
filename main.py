@@ -64,6 +64,7 @@ async def log_action(guild: discord.Guild, text: str):
 async def on_ready():
     logger.info(f"Logged in as {bot.user} (id: {bot.user.id})")
     logger.info("Bot is ready.")
+    logger.info("Testing Github Webhook.")
 
 @bot.event
 async def on_message(message: discord.Message):
