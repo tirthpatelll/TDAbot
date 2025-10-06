@@ -1,6 +1,8 @@
 import os
 import re
 import logging
+import unicodedata
+from dotenv import load_dotenv
 from datetime import timedelta
 from threading import Thread
 
@@ -10,6 +12,8 @@ from discord.ext import commands
 # ------------------------------
 # Configuration
 # ------------------------------
+load_dotenv()
+
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 TIMEOUT_SECONDS = 60 * 5  # Timeout duration in seconds
 EXEMPT_ROLE_NAMES = {"Discord Mod", "Officers"}  # Roles that won't be timed out
@@ -30,11 +34,42 @@ intents.members = True  # Needed to timeout members
 
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
+#-------------------------------
+#normalization function of banned word
+#-------------------------------
+LOOKALIKES = {
+    "0": "o",   # digit zero
+    "О": "o",   # Cyrillic capital O
+    "о": "o",   # Cyrillic small o
+}
+def normalize_text(s:str) -> str :
+    # break down into base + accents
+    s = unicodedata.normalize("NFKD", s)
+    # strip accents
+    s = ''.join(c for c in s if not unicodedata.combining(c))
+    # replace lookalikes
+    s = ''.join(LOOKALIKES.get(c, c) for c in s)
+    # lowercase
+    return s.lower()
+
+print(normalize_text("job"))
 # ------------------------------
 # Regex for banned word
 # ------------------------------
-JOB_REGEX = re.compile(r"\bjob\b", re.IGNORECASE)
-
+JOB_REGEX = re.compile(
+    r"""
+    \b
+    j
+    [\s\-\._]*     
+    o
+    [\s\-\._]*    # I dont know if this is the best way to have this... plx fix if ugly -AGiron
+    b
+    [\s\-\._]*     
+    s?
+    (?=\b|[^a-zA-Z0-9_])   
+    """,
+    re.IGNORECASE | re.VERBOSE
+)
 # ------------------------------
 # Helper Functions
 # ------------------------------
@@ -72,12 +107,14 @@ async def on_message(message: discord.Message):
         return  # Ignore messages from the bot itself
     if not message.guild:
         return  # Ignore DMs
-
+    print("RAW MESSAGE:", message.content)
     author = message.author
     if not isinstance(author, discord.Member):
         author = await message.guild.fetch_member(message.author.id)
 
-    if JOB_REGEX.search(message.content or ""):
+    normalized = normalize_text(message.content or "")
+    if JOB_REGEX.search(normalized):
+        print(">>> REGEX MATCHED:", normalized)
         if is_exempt(author):
             await log_action(
                 message.guild,
