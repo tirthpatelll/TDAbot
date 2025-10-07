@@ -102,7 +102,6 @@ async def log_action(guild: discord.Guild, text: str):
 async def on_ready():
     logger.info(f"Logged in as {bot.user} (id: {bot.user.id})")
     logger.info("Bot is ready.")
-    logger.info("its workingg!!!")
 
 @bot.event
 async def on_message(message: discord.Message):
@@ -110,7 +109,6 @@ async def on_message(message: discord.Message):
         return  # Ignore messages from the bot itself
     if not message.guild:
         return  # Ignore DMs
-    print("RAW MESSAGE:", message.content)
     author = message.author
     if not isinstance(author, discord.Member):
         author = await message.guild.fetch_member(message.author.id)
@@ -151,7 +149,6 @@ async def on_message(message: discord.Message):
             try:
                 await message.channel.send(
                     f"{author.mention} has been timed out for using a disallowed word.",
-                    delete_after=8
                 )
             except Exception:
                 pass
