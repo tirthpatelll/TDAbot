@@ -2,6 +2,8 @@ import os
 import re
 import logging
 import unicodedata
+import random
+from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
 from threading import Thread
@@ -54,7 +56,7 @@ def normalize_text(s:str) -> str :
 
 print(normalize_text("job"))
 # ------------------------------
-# Regex for banned word
+# Regex for banned word & Meme
 # ------------------------------
 JOB_REGEX = re.compile(
     r"""
@@ -70,6 +72,7 @@ JOB_REGEX = re.compile(
     """,
     re.IGNORECASE | re.VERBOSE
 )
+MUSIC_REGEX = re.compile(r"\bmusic major\b", re.IGNORECASE) 
 # ------------------------------
 # Helper Functions
 # ------------------------------
@@ -112,7 +115,23 @@ async def on_message(message: discord.Message):
     if not isinstance(author, discord.Member):
         author = await message.guild.fetch_member(message.author.id)
 
+
     normalized = normalize_text(message.content or "")
+
+    # meme folder randomizer
+    music_meme = Path(__file__).parent / "Images" / "Music_Major_Memes"
+
+    files = list(music_meme.iterdir())
+    chosen_file = random.choice(files)
+
+    # music major display meme logic
+    if MUSIC_REGEX.search(normalized):
+        
+        await message.channel.send(f"{author.mention} :clown:", file=discord.File(chosen_file))
+        print(">>> REGEX MATCHED:", normalized)
+        return
+
+    # time out logic for the J word
     if JOB_REGEX.search(normalized):
         print(">>> REGEX MATCHED:", normalized)
         if is_exempt(author):
